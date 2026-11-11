@@ -1,4 +1,6 @@
 # Roadmap
+- [ ] Update the 14 requested remix secrets (waiting for the user to submit the secure replacement form).
+- [ ] Reset copied migration history for the remix (blocked: available migration tooling does not support resetting the journal and snapshots; manual reset is prohibited).
 - [x] Repair tenant and owner portal data and maintenance submission/read-back (tenant + owner pages checked signed in).
 - [x] Notify office recipients and Abu Rakan on explicit maintenance submission.
 - [ ] Real WhatsApp delivery of a maintenance alert (not sent in testing to avoid messaging real numbers).
