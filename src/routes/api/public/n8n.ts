@@ -58,13 +58,8 @@ export const Route = createFileRoute("/api/public/n8n")({
         }
       },
       POST: async ({ request }) => {
-        const { verifyAutomationToken } = await import("@/lib/automation.server");
-        const token = request.headers.get("x-mithra-token");
-        if (!(await verifyAutomationToken(token))) {
-          return new Response(JSON.stringify({ ok: false, error: "unauthorized" }), {
-            status: 401,
-            headers: { "Content-Type": "application/json" },
-          });
+        if (!(await authorizeAutomationRequest(request))) {
+          return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
         }
 
         let body: Record<string, unknown>;
