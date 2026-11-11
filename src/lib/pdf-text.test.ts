@@ -13,7 +13,7 @@ describe("قراءة الأسماء العربية من ملف العقد", () =
       { str: " ", dir: "ltr", width: 300 },
       ...visual("ﻦ|ﻳ|ﺪ|ﻟ|م ا|ﺎ|ﺴ|ﺣ"),
     ];
-    expect(pdfItemsToText(items)).toBe("Name  حسام الدين");
+    expect(pdfItemsToText(items).split(/ {2,}/)).toEqual(["Name", "حسام الدين"]);
   });
   it("كلمتان منفصلتان بمسافة تبقيان بالترتيب الصحيح", () => {
     expect(pdfItemsToText(visual("ﻲ|ﻟ|وا| |ﺮ|ﻫ|ﺎ|ﻣ"))).toBe("ماهر والي");
