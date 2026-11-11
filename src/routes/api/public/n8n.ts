@@ -83,7 +83,11 @@ export const Route = createFileRoute("/api/public/n8n")({
           });
 
         try {
-          if (action === "run_hourly" || action === "run_reminders") {
+          if (action === "run_hourly") {
+            return json(await runScheduledJobs());
+          }
+
+          if (action === "run_reminders") {
             const { runHourlyAutomation } = await import("@/lib/automation-runner.server");
             return json(await runHourlyAutomation());
           }
