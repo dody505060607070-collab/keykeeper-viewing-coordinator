@@ -193,7 +193,23 @@ export type EjarParsed = {
  */
 export function parseEjarContract(rawText: string): EjarParsed | null {
   if (!rawText) return null;
-  const text = looksScrambled(rawText) ? normalizeArabicPdfText(rawText) : rawText.normalize("NFKC");
+  const scrambled = looksScrambled(rawText);
+  let text = scrambled ? normalizeArabicPdfText(rawText) : rawText.normalize("NFKC");
+  if (!scrambled) {
+    // تسميات إنجليزية قد تنقسم على سطرين (مثل "Company\nname/Founder")
+    for (const l of [...LABELS, ...Object.keys(SECTION_OF)].sort((a, b) => b.length - a.length)) {
+      if (!l.includes(" ") && !l.includes("/")) continue;
+      const re = new RegExp(
+        l
+          .split(/(?<=[ /])/)
+          .map((w) => w.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+          .join("\\s*")
+          .replace(/\\s\*\//g, "\\s*/\\s*"),
+        "g",
+      );
+      text = text.replace(re, (m) => (m.includes("\n") ? l : m));
+    }
+  }
   if (!/Contract No\./.test(text) || !/Lessor Data/.test(text)) return null;
 
   const parts = text.replace(/\n/g, "  ").split(/ {2,}/).map((p) => p.trim()).filter(Boolean);
@@ -230,6 +246,41 @@ export function parseEjarContract(rawText: string): EjarParsed | null {
     const label = (LABELS as readonly string[]).includes(p)
       ? p
       : (LABELS as readonly string[]).find((l) => l.length > 6 && p.endsWith(l));
+    if (label === "National Address" && !scrambled) {
+      // العنوان يتوزّع على عدة أجزاء (مدينة، رمز، حي، رقم، شارع) حتى التسمية العربية
+      const pieces: string[] = [];
+      for (let k = i + 1; k < parts.length && pieces.length < 12; k++) {
+        const piece = parts[k]!;
+        if (/^:/.test(piece) || /:$/.test(piece) || (LABELS as readonly string[]).includes(piece)) break;
+        pieces.push(piece);
+      }
+      if (pieces.length) put(label, pieces.join(" ، "));
+      continue;
+    }
+    if (!scrambled && label === "Email") {
+      // البريد قد ينقسم على عدة أسطر (gmail.c + om)
+      const pieces: string[] = [];
+      for (let k = i + 1; k < parts.length && pieces.length < 5; k++) {
+        const piece = parts[k]!;
+        if (piece.includes(":") || (LABELS as readonly string[]).includes(piece) || new RegExp(`[${AR}]`).test(piece)) break;
+        pieces.push(piece);
+      }
+      const value = pieces.join("").replace(/\s/g, "");
+      if (value && value !== "-") put(label, value);
+      continue;
+    }
+    if (!scrambled && (label === "Name" || label === "Company name/Founder" || label === "Brokerage Entity Name")) {
+      // الاسم قد يمتد على عدة أسطر حتى التسمية العربية التي تبدأ بنقطتين
+      const pieces: string[] = [];
+      for (let k = i + 1; k < parts.length && pieces.length < 6; k++) {
+        const piece = parts[k]!;
+        if (piece.includes(":") || (LABELS as readonly string[]).includes(piece)) break;
+        pieces.push(piece);
+      }
+      const value = cleanValue(pieces.join(" "));
+      if (value) put(label, value);
+      continue;
+    }
     if (label) {
       const value = cleanValue(parts[i + 1] ?? "");
       if (value && !(LABELS as readonly string[]).includes(value)) put(label, value);
@@ -267,7 +318,7 @@ export function parseEjarContract(rawText: string): EjarParsed | null {
   }
   if (!payments.length) {
     const simpleRe =
-      /([\d.,]+\.\d{2})\s{2,}\d{4}-\d{2}-\d{2}\s{2,}\d{4}-\d{2}-\d{2}\s{2,}[^\s]+\s{2,}(\d{4}-\d{2}-\d{2})\s{2,}(\d{4}-\d{2}-\d{2})\s{2,}(\d{1,3})(?!\d)/g;
+      /([\d.,]+\.\d{2})\s{2,}\d{4}-\d{2}-\d{2}\s{2,}\d{4}-\d{2}-\d{2}\s{2,}(?:\S+\s+)?\S+\s{2,}(\d{4}-\d{2}-\d{2})\s{2,}(\d{4}-\d{2}-\d{2})\s{2,}(\d{1,3})(?!\d)/g;
     for (const m of text.matchAll(simpleRe)) {
       // عمودان ميلاديان: «تاريخ الاستحقاق» و«نهاية مهلة السداد». ترتيبهما في النص يختلف
       // حسب اتجاه القراءة، فالأقدم دائمًا هو الاستحقاق والأحدث هو نهاية المهلة.
@@ -298,11 +349,40 @@ export function parseEjarContract(rawText: string): EjarParsed | null {
     .filter((u) => u.unit_number || u.unit_type);
 
   const nationalAddress = g("property", "National Address") || g("lessor", "National Address");
-  const district = nationalAddress
-    .split(/[,،]/)
-    .map((s) => s.replace(/[،,]/g, "").replace(/\d+/g, "").trim())
-    .filter(Boolean)
-    .slice(-1)[0] ?? "";
+  // النص المرتّب: نقرأ عنوان العقار سطرًا سطرًا (كل سطر بترتيب بصري فنعكسه)،
+  // فيصبح الترتيب: رقم المبنى، الشارع، الرقم الإضافي، الحي، الرمز البريدي، المدينة.
+  // الحي = الجزء العربي الذي يسبق الرمز البريدي (5 أرقام) مباشرة.
+  let orderedDistrict = "";
+  if (!scrambled) {
+    const propStart = text.indexOf("Property Data");
+    const from = text.indexOf("National Address", propStart >= 0 ? propStart : 0);
+    if (from >= 0) {
+      const tail = text.slice(from + "National Address".length);
+      const end = tail.search(/:\s*العنوان الوطني|العنوان الوطني/);
+      const block = end >= 0 ? tail.slice(0, end) : "";
+      const tokens = block
+        .split("\n")
+        .flatMap((line) =>
+          line
+            .split(/[,،]|\s{2,}/)
+            .map((t) => t.trim())
+            .filter(Boolean)
+            .reverse(),
+        );
+      const arabicTokens = tokens.filter((t) => new RegExp(`[${AR}]`).test(t) && !/\d/.test(t));
+      const postal = tokens.findIndex((t) => /^\d{5}$/.test(t));
+      if (arabicTokens.length >= 2 && postal > 0 && new RegExp(`[${AR}]`).test(tokens[postal - 1]!)) {
+        orderedDistrict = tokens[postal - 1]!;
+      }
+    }
+  }
+  const district = !scrambled
+    ? orderedDistrict
+    : (nationalAddress
+      .split(/[,،]/)
+      .map((s) => s.replace(/[،,]/g, "").replace(/\d+/g, "").trim())
+      .filter(Boolean)
+      .slice(-1)[0] ?? "");
 
 
   const ownerCompanyName = g("lessor", "Company name/Founder");
