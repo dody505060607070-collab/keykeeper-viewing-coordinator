@@ -230,6 +230,17 @@ export function parseEjarContract(rawText: string): EjarParsed | null {
     const label = (LABELS as readonly string[]).includes(p)
       ? p
       : (LABELS as readonly string[]).find((l) => l.length > 6 && p.endsWith(l));
+    if (label === "National Address" && !looksScrambled(rawText)) {
+      // العنوان يتوزّع على عدة أجزاء (مدينة، رمز، حي، رقم، شارع) حتى التسمية العربية
+      const pieces: string[] = [];
+      for (let k = i + 1; k < parts.length && pieces.length < 12; k++) {
+        const piece = parts[k]!;
+        if (/^:/.test(piece) || /:$/.test(piece) || (LABELS as readonly string[]).includes(piece)) break;
+        pieces.push(piece);
+      }
+      if (pieces.length) put(label, pieces.join(" ، "));
+      continue;
+    }
     if (label) {
       const value = cleanValue(parts[i + 1] ?? "");
       if (value && !(LABELS as readonly string[]).includes(value)) put(label, value);
@@ -298,7 +309,15 @@ export function parseEjarContract(rawText: string): EjarParsed | null {
     .filter((u) => u.unit_number || u.unit_type);
 
   const nationalAddress = g("property", "National Address") || g("lessor", "National Address");
-  const district = nationalAddress
+  // النص المرتّب: الأجزاء العربية بالترتيب البصري [المدينة، الحي، الشارع]
+  const addressWords = nationalAddress
+    .split(/[,،]/)
+    .map((s) => s.replace(/\d+/g, "").trim())
+    .filter((s) => new RegExp(`[${AR}]`).test(s));
+  const orderedDistrict = !looksScrambled(rawText) && addressWords.length
+    ? (addressWords.length >= 2 ? addressWords[1]! : addressWords[0]!)
+    : "";
+  const district = orderedDistrict || nationalAddress
     .split(/[,،]/)
     .map((s) => s.replace(/[،,]/g, "").replace(/\d+/g, "").trim())
     .filter(Boolean)

@@ -64,5 +64,7 @@ export function pdfItemsToText(items: PdfTextItem[]): string {
     .join("  ")
     .replace(/ *\n */g, "\n")
     .normalize("NFKC")
+    // علامات التشكيل تخرج كعناصر منفصلة: نلصقها بالحرف السابق
+    .replace(/ *([\u064B-\u0652\u0670]) */g, "$1")
     .trim();
 }
