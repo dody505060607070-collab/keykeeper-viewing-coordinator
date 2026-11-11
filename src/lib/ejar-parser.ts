@@ -257,6 +257,18 @@ export function parseEjarContract(rawText: string): EjarParsed | null {
       if (pieces.length) put(label, pieces.join(" ، "));
       continue;
     }
+    if (!scrambled && label === "Email") {
+      // البريد قد ينقسم على عدة أسطر (gmail.c + om)
+      const pieces: string[] = [];
+      for (let k = i + 1; k < parts.length && pieces.length < 5; k++) {
+        const piece = parts[k]!;
+        if (piece.includes(":") || (LABELS as readonly string[]).includes(piece) || new RegExp(`[${AR}]`).test(piece)) break;
+        pieces.push(piece);
+      }
+      const value = pieces.join("").replace(/\s/g, "");
+      if (value && value !== "-") put(label, value);
+      continue;
+    }
     if (!scrambled && (label === "Name" || label === "Company name/Founder" || label === "Brokerage Entity Name")) {
       // الاسم قد يمتد على عدة أسطر حتى التسمية العربية التي تبدأ بنقطتين
       const pieces: string[] = [];
