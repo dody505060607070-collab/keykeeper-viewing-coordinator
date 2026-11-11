@@ -46,46 +46,15 @@ async function runScheduledJobs() {
 export const Route = createFileRoute("/api/public/n8n")({
   server: {
     handlers: {
-      // تشغيل دوري (cron كل ساعة): GET مع الترويسة X-Mithra-Token
+      // تشغيل دوري كل ساعة عبر X-Mithra-Token أو رمز التشغيل المجدول.
       GET: async ({ request }) => {
-        const { verifyAutomationToken } = await import("@/lib/automation.server");
-        const token = request.headers.get("x-mithra-token");
-        if (!(await verifyAutomationToken(token))) {
-          return new Response(JSON.stringify({ ok: false, error: "unauthorized" }), {
-            status: 401,
-            headers: { "Content-Type": "application/json" },
-          });
+        if (!(await authorizeAutomationRequest(request))) {
+          return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
         }
-        const { runHourlyAutomation } = await import("@/lib/automation-runner.server");
         try {
-          const result = await runHourlyAutomation();
-          let ownerBiweekly: unknown = null;
-          try {
-            const { runOwnerBiweekly } = await import("@/lib/owner-biweekly.server");
-            ownerBiweekly = await runOwnerBiweekly();
-          } catch (err) {
-            ownerBiweekly = { error: (err as Error).message };
-          }
-          let rentFollowup: unknown = null;
-          try {
-            const { runRentFollowup } = await import("@/lib/rent-followup.server");
-            rentFollowup = await runRentFollowup();
-          } catch (err) { rentFollowup = { error: (err as Error).message }; }
-          let meetings: unknown = null;
-          try {
-            const { runMeetingReminders } = await import("@/lib/meeting-reminders.server");
-            meetings = await runMeetingReminders();
-          } catch (err) { meetings = { error: (err as Error).message }; }
-          Object.assign(result as object, { ownerBiweekly, rentFollowup, meetings });
-          return new Response(JSON.stringify(result), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          });
+          return Response.json(await runScheduledJobs());
         } catch (e) {
-          return new Response(JSON.stringify({ ok: false, error: (e as Error).message }), {
-            status: 500,
-            headers: { "Content-Type": "application/json" },
-          });
+          return Response.json({ ok: false, error: (e as Error).message }, { status: 500 });
         }
       },
       POST: async ({ request }) => {
