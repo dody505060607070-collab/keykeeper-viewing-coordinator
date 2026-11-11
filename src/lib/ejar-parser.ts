@@ -364,9 +364,9 @@ export function parseEjarContract(rawText: string): EjarParsed | null {
       }
     }
   }
-  const district =
-    orderedDistrict ||
-    (nationalAddress
+  const district = !scrambled
+    ? orderedDistrict
+    : (nationalAddress
       .split(/[,،]/)
       .map((s) => s.replace(/[،,]/g, "").replace(/\d+/g, "").trim())
       .filter(Boolean)
