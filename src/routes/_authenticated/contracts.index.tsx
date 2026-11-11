@@ -22,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { describeDbError } from "@/lib/db-errors";
 import { analyzeContractPdf } from "@/lib/ai.functions";
 import { finalizeContractImport } from "@/lib/contracts.functions";
+import { pdfItemsToText, type PdfTextItem } from "@/lib/pdf-text";
 import { deleteContractWithOwner } from "@/lib/delete-helpers";
 import { ensureClientAccount } from "@/lib/portal.functions";
 import { contractStatusLabels, importStatusLabels } from "@/lib/labels";
@@ -1004,12 +1005,8 @@ export function ImportDialog({
         for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
           const page = await document.getPage(pageNumber);
           const content = await page.getTextContent();
-          pages.push(
-            content.items
-              .map((item) => ("str" in item ? item.str : ""))
-              .filter(Boolean)
-              .join(" "),
-          );
+          // ترتيب صحيح للحروف العربية حتى تُقرأ الأسماء كما هي في العقد
+          pages.push(pdfItemsToText(content.items.filter((item) => "str" in item) as PdfTextItem[]));
         }
         extractedText = pages.join("\n").trim();
       } catch {
