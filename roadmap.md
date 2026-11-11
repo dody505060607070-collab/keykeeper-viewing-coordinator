@@ -1,5 +1,9 @@
 # Roadmap
-- [ ] Update the 14 requested remix secrets (blocked: the user declined the secure replacement form; no values were changed).
+- [x] Update the six requested WhatsApp, Gemini, Gemini backup, and Groq secrets through the secure form.
+- [x] Activate and verify the hourly automation and 30-minute owner-batch schedules; unauthenticated runs are rejected, typecheck and build pass.
+- [ ] Verify the WhatsApp QR connection and real delivery (blocked: the remix has no auth users yet; restore the ZIP, sign in, then link WhatsApp).
+- [ ] Restore clients, owners, accounts, buildings, and all storage from the user's ZIP (waiting for the ZIP upload; seven buckets exist but are empty).
+- [x] Check remix recovery options: this remix contains the application code/assets; no separate source project is accessible for further recovery.
 - [ ] Reset copied migration history for the remix (blocked: available migration tooling does not support resetting the journal and snapshots; manual reset is prohibited).
 - [x] Repair tenant and owner portal data and maintenance submission/read-back (tenant + owner pages checked signed in).
 - [x] Notify office recipients and Abu Rakan on explicit maintenance submission.
