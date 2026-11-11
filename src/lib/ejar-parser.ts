@@ -317,11 +317,13 @@ export function parseEjarContract(rawText: string): EjarParsed | null {
   const orderedDistrict = !looksScrambled(rawText) && addressWords.length
     ? (addressWords.length >= 2 ? addressWords[1]! : addressWords[0]!)
     : "";
-  const district = orderedDistrict || nationalAddress
-    .split(/[,،]/)
-    .map((s) => s.replace(/[،,]/g, "").replace(/\d+/g, "").trim())
-    .filter(Boolean)
-    .slice(-1)[0] ?? "";
+  const district =
+    orderedDistrict ||
+    (nationalAddress
+      .split(/[,،]/)
+      .map((s) => s.replace(/[،,]/g, "").replace(/\d+/g, "").trim())
+      .filter(Boolean)
+      .slice(-1)[0] ?? "");
 
 
   const ownerCompanyName = g("lessor", "Company name/Founder");
