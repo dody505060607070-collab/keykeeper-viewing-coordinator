@@ -1,9 +1,47 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+async function authorizeAutomationRequest(request: Request): Promise<boolean> {
+  if (request.headers.get("authorization")) {
+    const { authenticateCronRequest } = await import("@/integrations/supabase/cron-auth");
+    const authFailure = await authenticateCronRequest(request);
+    if (!authFailure) return true;
+  }
+  const { verifyAutomationToken } = await import("@/lib/automation.server");
+  return verifyAutomationToken(request.headers.get("x-mithra-token"));
+}
+
+async function runScheduledJobs() {
+  const { runHourlyAutomation } = await import("@/lib/automation-runner.server");
+  const result = await runHourlyAutomation();
+  let ownerBiweekly: unknown = null;
+  try {
+    const { runOwnerBiweekly } = await import("@/lib/owner-biweekly.server");
+    ownerBiweekly = await runOwnerBiweekly();
+  } catch (err) {
+    ownerBiweekly = { error: (err as Error).message };
+  }
+  let rentFollowup: unknown = null;
+  try {
+    const { runRentFollowup } = await import("@/lib/rent-followup.server");
+    rentFollowup = await runRentFollowup();
+  } catch (err) {
+    rentFollowup = { error: (err as Error).message };
+  }
+  let meetings: unknown = null;
+  try {
+    const { runMeetingReminders } = await import("@/lib/meeting-reminders.server");
+    meetings = await runMeetingReminders();
+  } catch (err) {
+    meetings = { error: (err as Error).message };
+  }
+  Object.assign(result as object, { ownerBiweekly, rentFollowup, meetings });
+  return result;
+}
+
 /**
  * نقطة دخول n8n إلى النظام.
- * POST /api/public/n8n  مع الترويسة X-Mithra-Token
- * body: { action: "send_whatsapp" | "notify_staff" | "log", ... }
+ * POST /api/public/n8n مع X-Mithra-Token أو رمز التشغيل المجدول.
+ * body: { action: "run_hourly" | "send_whatsapp" | "notify_staff" | "log", ... }
  */
 export const Route = createFileRoute("/api/public/n8n")({
   server: {
