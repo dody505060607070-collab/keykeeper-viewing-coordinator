@@ -19,3 +19,4 @@
 - Rent follow-up uses separate opt-in settings and a next-due timestamp, queues through the existing owner batch processor, and is checked by the existing hourly entry point to avoid a new recurring poller.
 - Viewing requests reuse the meeting-reminder form in the task creation screen and a sibling tasks tab; keep one storage and reminder flow to avoid duplicate requests or messages.
 - Maintenance WhatsApp alerts go through one server helper that reads the staff-only recipients table and logs each attempt to `message_log` (`kind = maintenance_alert`); all submission paths (tenant, owner, public form) call it server-side so no browser insert skips the alert.
+- Contract PDF text is built with `pdfItemsToText` (`src/lib/pdf-text.ts`) which reverses only Arabic item runs from pdf.js visual order; the Ejar parser expects that ordered text (old scrambled text still supported). Why: joining raw items garbled Arabic names.
