@@ -3,7 +3,7 @@
 - [x] Activate and verify the hourly automation and 30-minute owner-batch schedules; unauthenticated runs are rejected, typecheck and build pass.
 - [ ] Verify the WhatsApp QR connection and real delivery (blocked: user must scan the QR from the WhatsApp link page).
 - [x] Restore all database records and user accounts from the uploaded backup (counts verified table by table).
-- [ ] Restore uploaded files (contract PDFs, internal files, request photos, meeting photos) — blocked: the backup holds only the file list, not the files; property photos still load from the old copy.
+- [ ] Restore uploaded files (contract PDFs, internal files, request photos, meeting photos) — blocked: the backup holds only the file list, not the files; property photos (296 files) are now copied here; remaining files need a ZIP from the old project.
 - [x] Check remix recovery options: this remix contains the application code/assets; no separate source project is accessible for further recovery.
 - [ ] Reset copied migration history for the remix (blocked: available migration tooling does not support resetting the journal and snapshots; manual reset is prohibited).
 - [x] Repair tenant and owner portal data and maintenance submission/read-back (tenant + owner pages checked signed in).
