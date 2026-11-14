@@ -136,3 +136,27 @@ export const verifyPhoneCode = createServerFn({ method: "POST" })
     const destination = staff.data ? "/dashboard" : partner.data ? "/partner" : client.data ? "/portal" : "/dashboard";
     return { ok: true as const, tokenHash, destination };
   });
+
+/** دخول مؤقت بدون رمز: يفتح الجلسة مباشرة للأرقام المسجّلة فقط. */
+export const signInWithoutCode = createServerFn({ method: "POST" })
+  .inputValidator((d) => phoneInput.parse(d))
+  .handler(async ({ data }) => {
+    const key = phoneKey(data.phone);
+    if (!key) return { ok: false as const, error: "رقم الجوال غير صحيح." };
+    const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
+    const userId = await findUserByPhone(db, key);
+    if (!userId) return { ok: false as const, error: "هذا الرقم غير مسجّل لدينا. تواصل مع مكتب الرشودي لإضافته." };
+    const user = await db.auth.admin.getUserById(userId);
+    const email = user.data.user?.email;
+    if (!email) return { ok: false as const, error: "الحساب غير مكتمل. تواصل مع المكتب." };
+    const link = await db.auth.admin.generateLink({ type: "magiclink", email });
+    const tokenHash = link.data.properties?.hashed_token;
+    if (link.error || !tokenHash) return { ok: false as const, error: "تعذّر فتح الجلسة، حاول مرة أخرى." };
+    const [partner, client] = await Promise.all([
+      db.from("service_partner_accounts").select("id").eq("user_id", userId).maybeSingle(),
+      db.from("client_accounts").select("id").eq("user_id", userId).maybeSingle(),
+    ]);
+    const staff = await db.rpc("is_staff", { _user_id: userId });
+    const destination = staff.data ? "/dashboard" : partner.data ? "/partner" : client.data ? "/portal" : "/dashboard";
+    return { ok: true as const, tokenHash, destination };
+  });
