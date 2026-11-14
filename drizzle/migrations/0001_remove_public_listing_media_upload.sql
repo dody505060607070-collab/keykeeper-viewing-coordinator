@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "public upload listing request media" ON storage.objects;
