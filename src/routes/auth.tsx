@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { requestPhoneCode, verifyPhoneCode } from "@/lib/phone-auth.functions";
+import { requestPhoneCode, verifyPhoneCode, signInWithoutCode } from "@/lib/phone-auth.functions";
 import { markSessionPersistence } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/auth")({
@@ -62,12 +62,16 @@ function AuthPage() {
     e?.preventDefault();
     setBusy(true);
     try {
-      const res = await requestPhoneCode({ data: { country, phone } });
+      // دخول مؤقت بدون رمز واتساب
+      const res = await signInWithoutCode({ data: { country, phone } });
       if (!res.ok) throw new Error(res.error);
-      toast.success("أرسلنا رمز الدخول على واتساب");
-      setStep("code");
+      const { error } = await supabase.auth.verifyOtp({ token_hash: res.tokenHash, type: "magiclink" });
+      if (error) throw new Error("تعذّر فتح الجلسة، حاول مرة أخرى.");
+      markSessionPersistence(remember);
+      navigate({ to: res.destination as "/dashboard" });
+      void requestPhoneCode;
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "تعذّر إرسال الرمز");
+      toast.error(err instanceof Error ? err.message : "تعذّر الدخول");
     } finally {
       setBusy(false);
     }
@@ -150,7 +154,7 @@ function AuthPage() {
                     البقاء متصلاً على هذا الجهاز
                   </label>
                   <Button type="submit" className="h-12 w-full rounded-full text-base font-bold" disabled={busy}>
-                    إرسال الرمز على واتساب
+                    دخول
                   </Button>
                 </form>
               ) : (
