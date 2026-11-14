@@ -71,7 +71,7 @@ function AuthPage() {
       navigate({ to: res.destination as "/dashboard" });
       void requestPhoneCode;
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "تعذّر إرسال الرمز");
+      toast.error(err instanceof Error ? err.message : "تعذّر الدخول");
     } finally {
       setBusy(false);
     }
@@ -154,7 +154,7 @@ function AuthPage() {
                     البقاء متصلاً على هذا الجهاز
                   </label>
                   <Button type="submit" className="h-12 w-full rounded-full text-base font-bold" disabled={busy}>
-                    إرسال الرمز على واتساب
+                    دخول
                   </Button>
                 </form>
               ) : (
