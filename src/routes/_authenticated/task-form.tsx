@@ -305,7 +305,8 @@ function TaskFormPage() {
             data: { taskId: newId, userIds: added, schedule: true },
           });
           if (result.sent > 0) toast.success(`تم إرسال المهمة على واتساب لـ ${result.sent} موظف`);
-          if (result.failed > 0) toast.error(`تعذّر إرسال واتساب لـ ${result.failed} موظف`);
+          if (result.failed > 0) toast.error(result.errors[0] ?? "تعذّر إرسال بعض رسائل أو مرفقات المهمة");
+          if (result.skipped > 0) toast.warning(`${result.skipped} موظف بدون رقم واتساب مفعّل`);
           queryClient.invalidateQueries({ queryKey: ["task-reminder-state", newId] });
         } catch {
           toast.error("تعذّر إرسال المهمة على واتساب");
@@ -343,7 +344,7 @@ function TaskFormPage() {
     },
     onSuccess: (result) => {
       if (result.sent > 0) toast.success(`تم إرسال المهمة على واتساب لـ ${result.sent} موظف`);
-      if (result.failed > 0) toast.error(`تعذّر إرسال واتساب لـ ${result.failed} موظف`);
+      if (result.failed > 0) toast.error(result.errors[0] ?? "تعذّر إرسال بعض رسائل أو مرفقات المهمة");
       if (result.skipped > 0) toast.warning(`${result.skipped} موظف بدون رقم واتساب مفعّل`);
       queryClient.invalidateQueries({ queryKey: ["task-reminder-state", id] });
     },

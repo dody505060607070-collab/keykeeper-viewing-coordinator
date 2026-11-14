@@ -1,4 +1,6 @@
 # Roadmap
+- [x] Diagnose WhatsApp failures and repair read-only connection polling, explicit QR pairing, phone normalization, send acceptance checks and task attachment error reporting; 64 tests pass and related pages open.
+- [ ] WhatsApp final checks: main line is currently open; fresh QR scan and recipient delivery remain unverified because no active session was disconnected and no test message was sent; owners line rejects credentials (401) and needs valid provider access.
 - [x] Update the six requested WhatsApp, Gemini, Gemini backup, and Groq secrets through the secure form.
 - [x] Activate and verify the hourly automation and 30-minute owner-batch schedules; unauthenticated runs are rejected, typecheck and build pass.
 - [ ] Verify the WhatsApp QR connection and real delivery (blocked: user must scan the QR from the WhatsApp link page).

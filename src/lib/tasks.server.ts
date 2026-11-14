@@ -76,7 +76,7 @@ export async function notifyTaskAssigneesNow(
 
   for (const row of rows ?? []) {
     const profile = Array.isArray(row.profile) ? row.profile[0] : row.profile;
-    const phone = profile?.whatsapp ?? profile?.phone ?? "";
+    const phone = profile?.whatsapp?.trim() || profile?.phone?.trim() || "";
     if (!profile?.is_active || !profile.whatsapp_notify || !phone) {
       result.skipped += 1;
       continue;
@@ -101,11 +101,15 @@ export async function notifyTaskAssigneesNow(
 
     if (sendResult.ok) {
       for (const image of imageUrls) {
-        await whatsappSendMedia({ to: phone, url: image.url, fileName: image.name });
+        const mediaResult = await whatsappSendMedia({ to: phone, url: image.url, fileName: image.name });
+        if (!mediaResult.ok) {
+          result.failed += 1;
+          result.errors.push(`تعذر إرسال مرفق المهمة: ${mediaResult.error}`);
+        }
       }
     }
 
-    await supabaseAdmin.from("message_log").upsert(
+    const log = await supabaseAdmin.from("message_log").upsert(
       {
         task_id: taskId,
         recipient_name: profile.full_name,
@@ -120,6 +124,7 @@ export async function notifyTaskAssigneesNow(
       },
       { onConflict: "idempotency_key" },
     );
+    if (log.error) throw log.error;
 
     if (options?.schedule) {
       const { data: state } = await supabaseAdmin

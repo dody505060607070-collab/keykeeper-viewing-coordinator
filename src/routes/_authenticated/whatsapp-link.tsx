@@ -2,11 +2,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Loader2, MessageCircle, MonitorSmartphone, QrCode, RefreshCw, Smartphone, Unlink } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { getWhatsAppLinkStatus, unlinkWhatsApp } from "@/lib/whatsapp.functions";
+import { getWhatsAppLinkStatus, getWhatsAppQr, unlinkWhatsApp } from "@/lib/whatsapp.functions";
 
 export const Route = createFileRoute("/_authenticated/whatsapp-link")({
   head: () => ({
@@ -33,24 +33,47 @@ function WhatsAppLinkPage() {
   const qc = useQueryClient();
   const fetchStatus = useServerFn(getWhatsAppLinkStatus);
   const unlink = useServerFn(unlinkWhatsApp);
+  const fetchQr = useServerFn(getWhatsAppQr);
   const [line, setLine] = useState<1 | 2>(1);
+  const [pairingLine, setPairingLine] = useState<1 | 2 | null>(null);
 
-  const { data, isLoading, isFetching } = useQuery({
+  const { data, isLoading, isFetching, error: statusError } = useQuery({
     queryKey: ["whatsapp-link-status", line],
     queryFn: () => fetchStatus({ data: { line } }),
-    refetchInterval: 5000,
+    refetchInterval: (query) => query.state.data?.connection === "open" ? 15000 : 5000,
+    retry: false,
   });
+
+  const connected = data?.connection === "open";
+  const pairing = pairingLine === line && !connected && !data?.error;
+  const qrQuery = useQuery({
+    queryKey: ["whatsapp-qr", line],
+    queryFn: () => fetchQr({ data: { line } }),
+    enabled: pairing,
+    refetchInterval: pairing ? 45000 : false,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+  const qr = pairing ? qrQuery.data?.qr : null;
+  useEffect(() => {
+    if (connected) {
+      setPairingLine(null);
+      qc.removeQueries({ queryKey: ["whatsapp-qr", line] });
+    }
+  }, [connected, line, qc]);
 
   const unlinkMutation = useMutation({
     mutationFn: () => unlink({ data: { line } }),
     onSuccess: (res) => {
-      if (res.ok) toast.success("تم فصل الرقم — امسح رمز QR جديد");
+      if (res.ok) {
+        toast.success("تم فصل الرقم — اطلب رمز ربط جديد");
+        setPairingLine(null);
+        qc.removeQueries({ queryKey: ["whatsapp-qr", line] });
+      }
       else toast.error(res.error ?? "تعذر الفصل");
       void qc.invalidateQueries({ queryKey: ["whatsapp-link-status"] });
     },
   });
-
-  const connected = data?.connection === "open";
 
   return (
     <div dir="rtl" className="space-y-5">
@@ -67,15 +90,15 @@ function WhatsAppLinkPage() {
           [1, "الرقم الأساسي", "كل الرسائل والتذكيرات كما هي"],
           [2, "رقم ملاك البيع", "رسالة الجمعة 4 العصر كل أسبوعين فقط"],
         ] as const).map(([v, t, d]) => (
-          <button
+          <Button
             key={v}
             type="button"
-            onClick={() => setLine(v)}
-            className={`rounded-2xl border px-4 py-2 text-start ${line === v ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground"}`}
+            onClick={() => { setLine(v); setPairingLine(null); }}
+            className={`h-auto flex-col items-start rounded-2xl border px-4 py-2 text-start ${line === v ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground"}`}
           >
             <span className="block text-[13px] font-bold">{t}</span>
             <span className={`block text-[11px] ${line === v ? "text-primary-foreground/80" : "text-muted-foreground"}`}>{d}</span>
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -96,15 +119,15 @@ function WhatsAppLinkPage() {
               </div>
             </div>
           ))}
-          <button type="button" onClick={() => qc.invalidateQueries({ queryKey: ["whatsapp-link-status"] })} className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-[14px] font-bold text-primary-foreground hover:opacity-90">
+          <Button type="button" disabled={isFetching} onClick={() => qc.invalidateQueries({ queryKey: ["whatsapp-link-status", line] })} className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-[14px] font-bold text-primary-foreground hover:opacity-90">
             <RefreshCw className={`size-4 ${isFetching ? "animate-spin" : ""}`} /> تحديث الاتصال
-          </button>
+          </Button>
           <p className="text-[12px] text-muted-foreground">ملاحظة: هذا ربط عبر واتساب ويب. إن انقطع الاتصال، لن تُرسل الرسائل حتى يُعاد مسح رمز QR.</p>
         </div>
         <div className="space-y-4 rounded-2xl border border-border p-5">
           <div className={`rounded-2xl p-4 ${connected ? "bg-success/10" : "bg-primary/[0.06]"}`}>
-            <p className={`flex items-center gap-2 text-[15px] font-bold ${connected ? "text-success" : "text-primary"}`}>● {connected ? "متصل" : "غير متصل"}</p>
-            <p className="mt-1 text-[12px] text-muted-foreground">{connected ? "الرقم مرتبط ويعمل" : "لم يتم ربط حساب واتساب بعد"}</p>
+            <p className={`flex items-center gap-2 text-[15px] font-bold ${connected ? "text-success" : "text-primary"}`}>● {connected ? "متصل" : data?.connection === "unknown" || statusError ? "تعذر التحقق" : data?.connection === "connecting" ? "جارٍ الاتصال" : "غير متصل"}</p>
+            <p className="mt-1 text-[12px] text-muted-foreground">{connected ? "الرقم مرتبط ويعمل" : data?.error || statusError ? "تعذر التحقق من الربط الآن" : "بانتظار اتصال واتساب"}</p>
           </div>
 
         {isLoading ? (
@@ -135,13 +158,13 @@ function WhatsAppLinkPage() {
             </div>
             <Button
               variant="outline"
-              onClick={() => unlinkMutation.mutate()}
+              onClick={() => { if (window.confirm("هل تريد فصل رقم واتساب؟ سيتوقف إرسال الرسائل حتى تربطه مجددًا.")) unlinkMutation.mutate(); }}
               disabled={unlinkMutation.isPending}
             >
               <Unlink className="me-2 size-4" /> فصل الرقم
             </Button>
           </div>
-        ) : data.qr ? (
+        ) : qr ? (
           <div className="space-y-4">
             <p className="text-sm font-semibold">امسح الرمز من تطبيق واتساب</p>
             <ol className="list-inside list-decimal space-y-1 text-[13px] text-muted-foreground">
@@ -150,17 +173,18 @@ function WhatsAppLinkPage() {
               <li>وجّه الكاميرا على الرمز بالأسفل</li>
             </ol>
             <img
-              src={data.qr}
+              src={qr}
               alt="رمز QR لربط رقم واتساب بالنظام"
-              className="mx-auto size-64 rounded-lg border bg-white p-2"
+              className="mx-auto aspect-square w-full max-w-64 rounded-lg border bg-card p-2"
             />
           </div>
         ) : (
           <div className="space-y-3 text-sm">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Loader2 className="size-4 animate-spin" /> جارٍ تجهيز رمز QR…
-            </div>
+            {pairing ? <div className="flex items-center gap-2 text-muted-foreground"><Loader2 className="size-4 animate-spin" /> جارٍ تجهيز رمز QR…</div> : null}
+            {!data.error && !statusError ? <Button disabled={qrQuery.isFetching || data.connection === "unknown"} onClick={() => { setPairingLine(line); void qc.invalidateQueries({ queryKey: ["whatsapp-qr", line] }); }}><QrCode className="me-2 size-4" /> إظهار رمز الربط</Button> : null}
             {data.error ? <p className="text-[13px] text-destructive">{data.error}</p> : null}
+            {statusError ? <p className="text-[13px] text-destructive">تعذر الوصول لخدمة واتساب، حاول تحديث الاتصال.</p> : null}
+            {qrQuery.data?.error ? <p className="text-[13px] text-destructive">{qrQuery.data.error}</p> : null}
           </div>
         )}
 
