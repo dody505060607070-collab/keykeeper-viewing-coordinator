@@ -63,10 +63,13 @@ function ListPropertyPage() {
         const attachments: { path: string; name: string; size: number; type: string }[] = [];
         let failedUploads = 0;
         for (const file of images) {
-          const extension = file.name.split(".").pop()?.replace(/[^a-zA-Z0-9]/g, "") || "jpg";
-          const path = `public/${crypto.randomUUID()}.${extension}`;
-          const upload = await supabase.storage.from("listing-request-media").upload(path, file, { contentType: file.type });
-          if (upload.error) { failedUploads += 1; continue; }
+          let path: string;
+          try {
+            const buf = new Uint8Array(await file.arrayBuffer());
+            let bin = ""; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+            const { uploadListingImage } = await import("@/lib/listing-media.functions");
+            ({ path } = await uploadListingImage({ data: { type: file.type, base64: btoa(bin) } }));
+          } catch { failedUploads += 1; continue; }
           attachments.push({ path, name: file.name, size: file.size, type: file.type });
         }
         if (failedUploads > 0) toast.warning(`تعذّر رفع ${failedUploads} صورة، وسيتم إرسال الطلب بدونها`);
