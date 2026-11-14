@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Diagnose and repair WhatsApp QR polling, connection errors and task-message failures; verify both lines without sending unsolicited messages.
 - [x] Update the six requested WhatsApp, Gemini, Gemini backup, and Groq secrets through the secure form.
 - [x] Activate and verify the hourly automation and 30-minute owner-batch schedules; unauthenticated runs are rejected, typecheck and build pass.
 - [ ] Verify the WhatsApp QR connection and real delivery (blocked: user must scan the QR from the WhatsApp link page).
