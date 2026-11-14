@@ -28,6 +28,7 @@ export async function sendMeetingNow(row: Row, now = new Date()) {
     await supabaseAdmin.from("message_log").insert({
       kind: "meeting_reminder", recipient_name: name ?? "", recipient_phone: phone, body,
       channel: "whatsapp", result: r.ok ? "sent" : "failed", failure_reason: r.ok ? null : r.error,
+      provider_message_id: r.ok ? r.sid : null,
       sent_by_system: true,
     } as never);
   }

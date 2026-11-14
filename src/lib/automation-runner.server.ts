@@ -294,7 +294,7 @@ export async function runHourlyAutomation(): Promise<RunResult> {
         await supabaseAdmin.from("task_reminder_state").delete().eq("id", state.id);
         continue;
       }
-      const phone = profile?.whatsapp ?? profile?.phone ?? "";
+      const phone = profile?.whatsapp?.trim() || profile?.phone?.trim() || "";
       if (!profile?.is_active || !profile.whatsapp_notify || !phone) {
         skippedNoPhone += 1;
         await supabaseAdmin.from("task_reminder_state").delete().eq("id", state.id);
