@@ -22,6 +22,13 @@
       "when": 1795446189929,
       "tag": "0002_tighten_partners_guarantees_read",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795449380064,
+      "tag": "0003_staff_only_sale_guarantees_read",
+      "breakpoints": true
     }
   ]
 }
