@@ -6,4 +6,3 @@ export { default as ListingsPage } from "./pages/Listings";
 export { default as AboutPage } from "./pages/About";
 export { default as ContactPage } from "./pages/Contact";
 export * from "./data";
-import "./styles/rashudi.css";
