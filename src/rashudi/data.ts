@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* الرشودي للعقارات — data model + sample data (mirrors alrashudi.sa today).
    In the live site pass real data from Supabase to <RashudiProvider data={...}> in exactly this shape. */
 

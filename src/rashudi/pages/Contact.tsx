@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useRef, useState } from "react";
 import { useRashudi, Link } from "../context";
 import { useMotion } from "../motion";

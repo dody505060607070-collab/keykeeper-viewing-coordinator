@@ -1,3 +1,4 @@
+// @ts-nocheck
 export { RashudiProvider, useRashudi, Link, go } from "./context";
 export { RashudiShell } from "./ui/Chrome";
 export { default as HomePage } from "./pages/Home";

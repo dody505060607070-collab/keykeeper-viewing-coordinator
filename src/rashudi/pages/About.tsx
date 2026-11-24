@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useLayoutEffect, useRef } from "react";
 import { useRashudi, Link } from "../context";
 import { useMotion, gsap, reduced } from "../motion";

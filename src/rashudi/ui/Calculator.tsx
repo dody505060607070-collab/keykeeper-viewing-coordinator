@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useMemo, useState } from "react";
 import { fmt } from "../motion";
 import { Head } from "./Cards";

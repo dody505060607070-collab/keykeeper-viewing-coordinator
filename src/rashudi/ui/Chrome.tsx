@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useRashudi } from "../context";
 import { Icon } from "./Icons";

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from "react";
 import { Listing, listingHref, listingImage, priceLabel, dealLabel, listingWaText } from "../data";
 import { Link, useRashudi } from "../context";

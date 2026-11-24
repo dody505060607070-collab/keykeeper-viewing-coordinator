@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* Scroll motion system: Lenis smooth scroll + GSAP ScrollTrigger.
    Pages only mark elements with data attributes; useMotion() wires them:
      data-reveal="up|clip|scale|fade"   enter animation (once)

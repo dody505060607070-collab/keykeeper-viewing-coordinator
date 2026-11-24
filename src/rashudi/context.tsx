@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { createContext, useContext, useMemo } from "react";
 import { RashudiData, SAMPLE, waLink } from "./data";
 

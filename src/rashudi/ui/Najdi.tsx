@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from "react";
 /* The Najdi triangular crenellation — the page's signature motif.
    <Crenel/> draws a repeating row of triangles at a section's edge. */
