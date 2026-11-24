@@ -1,3 +1,5 @@
+import { RashudiRoute } from "@/components/rashudi/RashudiRoute";
+import * as R from "@/rashudi";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Award, Building2, Handshake, Users } from "lucide-react";
 
@@ -26,7 +28,7 @@ export const Route = createFileRoute("/about")({
     ],
     links: [{ rel: "canonical", href: "https://alrashudi.sa/about" }],
   }),
-  component: AboutPage,
+  component: NewAbout,
 });
 
 const stats = [
@@ -104,4 +106,8 @@ function AboutPage() {
       </section>
     </SiteLayout>
   );
+}
+
+function NewAbout() {
+  return <RashudiRoute>{(s) => <R.AboutPage />}</RashudiRoute>;
 }

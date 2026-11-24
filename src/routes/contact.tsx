@@ -1,3 +1,5 @@
+import { RashudiRoute } from "@/components/rashudi/RashudiRoute";
+import * as R from "@/rashudi";
 import { createFileRoute } from "@tanstack/react-router";
 import { Clock, Mail, MapPin, Phone } from "lucide-react";
 import { useState } from "react";
@@ -32,7 +34,7 @@ export const Route = createFileRoute("/contact")({
     ],
     links: [{ rel: "canonical", href: "https://alrashudi.sa/contact" }],
   }),
-  component: ContactPage,
+  component: NewContact,
 });
 
 function ContactPage() {
@@ -135,4 +137,8 @@ function ContactPage() {
       </section>
     </SiteLayout>
   );
+}
+
+function NewContact() {
+  return <RashudiRoute>{(s) => <R.ContactPage />}</RashudiRoute>;
 }

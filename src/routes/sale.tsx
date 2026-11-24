@@ -1,3 +1,5 @@
+import { RashudiRoute } from "@/components/rashudi/RashudiRoute";
+import * as R from "@/rashudi";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
@@ -33,7 +35,7 @@ export const Route = createFileRoute("/sale")({
     ],
     links: [{ rel: "canonical", href: "https://alrashudi.sa/sale" }],
   }),
-  component: SalePage,
+  component: NewSale,
 });
 
 function SalePage() {
@@ -170,4 +172,8 @@ function SalePage() {
       <PropertyMapSection properties={filtered} />
     </SiteLayout>
   );
+}
+
+function NewSale() {
+  return <RashudiRoute>{(s) => <R.ListingsPage key={s} deal="sale" />}</RashudiRoute>;
 }

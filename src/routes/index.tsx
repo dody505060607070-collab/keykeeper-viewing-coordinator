@@ -1,3 +1,5 @@
+import { RashudiRoute } from "@/components/rashudi/RashudiRoute";
+import * as R from "@/rashudi";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Building2, Handshake, Home, KeyRound, ShieldCheck } from "lucide-react";
@@ -68,7 +70,7 @@ export const Route = createFileRoute("/")({
       },
     ],
   }),
-  component: HomePage,
+  component: NewHome,
 });
 
 const fallbackServices = [
@@ -323,4 +325,8 @@ function HomePage() {
       />
     </SiteLayout>
   );
+}
+
+function NewHome() {
+  return <RashudiRoute>{(s) => <R.HomePage />}</RashudiRoute>;
 }
